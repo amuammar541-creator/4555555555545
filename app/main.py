@@ -4,10 +4,11 @@ Main entry point for the Telegram Bot.
 
 import asyncio
 import logging
+import os
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand
 
 from app.config import config
 from app.bot.router import router
@@ -18,91 +19,40 @@ from app.utils.logger import setup_logging
 
 async def main():
     """Main entry point for the application."""
-
+    
+    # Ensure required directories exist
+    Path("data").mkdir(exist_ok=True)
+    Path("exports").mkdir(exist_ok=True)
+    Path("sessions").mkdir(exist_ok=True)
+    
     # Setup logging
     setup_logging()
     logger = logging.getLogger(__name__)
-
-    bot = None
-
+    
     try:
-        # =========================================================
-        # 1. Initialize database
-        # =========================================================
+        # Initialize database
         logger.info("Initializing database...")
         await init_database()
-
-        # =========================================================
-        # 2. Initialize Telegram Bot
-        # =========================================================
+        
+        # Initialize bot
         logger.info("Initializing bot...")
-
-        bot = Bot(
-            token=config.BOT_TOKEN
-        )
-
-        # =========================================================
-        # 3. Initialize Dispatcher + FSM Storage
-        # =========================================================
+        bot = Bot(token=config.BOT_TOKEN)
         storage = MemoryStorage()
-
-        dp = Dispatcher(
-            storage=storage
-        )
-
-        # Register main router
+        dp = Dispatcher(storage=storage)
         dp.include_router(router)
-
-        # =========================================================
-        # 4. Initialize Userbot Manager
-        # =========================================================
-        logger.info("Setting up userbot manager...")
-
+        
+        # Initialize userbot (will be started when needed)
+        logger.info("Userbot manager initialized")
         userbot_manager = UserbotManager()
-
-        # Userbot is intentionally NOT started here.
-        # It will be initialized when required by the scan system.
-
-        # =========================================================
-        # 5. Configure Bot Commands
-        # =========================================================
-        commands = [
-            BotCommand(
-                command="start",
-                description="Start the bot"
-            ),
-            BotCommand(
-                command="help",
-                description="Get help"
-            )
-        ]
-
-        await bot.set_my_commands(commands)
-
-        # =========================================================
-        # 6. Start Bot Polling
-        # =========================================================
+        
         logger.info("Bot started successfully!")
-
-        await dp.start_polling(
-            bot
-        )
-
+        await dp.start_polling(bot)
+        
     except Exception as e:
-        logger.error(
-            f"Failed to start bot: {e}",
-            exc_info=True
-        )
+        logger.error(f"Failed to start bot: {e}")
         raise
-
     finally:
-        # =========================================================
-        # 7. Graceful Shutdown
-        # =========================================================
-        if bot is not None:
-            await bot.session.close()
-
-        logger.info("Bot stopped.")
+        await bot.session.close()
 
 
 if __name__ == "__main__":
