@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensure directories exist
+# Create necessary directories
 mkdir -p data exports sessions
 
 # Run the bot
