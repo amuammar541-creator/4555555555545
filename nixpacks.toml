@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["python311", "sqlite", "openssl"]
+nixPkgs = ["python311", "python311Packages.pip", "sqlite", "openssl"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt"
+]
 
 [phases.start]
 cmd = "python -m app.main"
